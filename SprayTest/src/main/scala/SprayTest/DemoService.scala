@@ -11,6 +11,8 @@ import spray.http._
 import HttpMethods._
 import MediaTypes._
 import java.io._
+import java.net.URL
+import javax.swing.text.AbstractDocument.Content
 
 
 class DemoService extends Actor with SprayActorLogging {
@@ -52,13 +54,22 @@ class DemoService extends Actor with SprayActorLogging {
 
 
     case HttpRequest(GET, Uri.Path("/append"), _, _, _) =>
-      val source = scala.io.Source.fromFile("file.txt")
+     // val source = scala.io.Source.fromFile("file.txt")
       val data = Array("Five","strings","in","a","file!")
-      appendFile("file.txt", "alal")
+     // appendFile("file.txt", "alal")
+     // val lines = source.mkString
+      sender ! FormAdding
+    //  sender ! HttpResponse(entity = lines)
+    //  source.close()
+
+    case HttpRequest(GET, Uri.Path("/newfile"),_ , _, _) =>
+      val source = scala.io.Source.fromFile("file.txt")
+      println(URL.getQuery())
+    // appendFile("file.txt", user)
       val lines = source.mkString
       sender ! HttpResponse(entity = lines)
       source.close()
-
+  /******************************************************************************/
     case HttpRequest(GET, Uri.Path("/stream"), _, _, _) =>
       val peer = sender // since the Props creator is executed asyncly we need to save the sender ref
       context actorOf Props(new Streamer(peer, 25))
@@ -152,6 +163,19 @@ class DemoService extends Actor with SprayActorLogging {
         </body>
       </html>.toString()
     )
+  )
+
+  lazy val FormAdding = HttpResponse (
+  entity = HttpEntity(`text/html`,
+  <html>
+    <body>
+      <h1>Add to file</h1>
+      <form name="input" action="/newfile" method="get" />
+        Username: <input type="text" name="user" />
+        <input type="submit" value="Submit" />
+      </body>
+  </html>.toString()
+  )
   )
 
   class Streamer(client: ActorRef, count: Int) extends Actor with SprayActorLogging {
