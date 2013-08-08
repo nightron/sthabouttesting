@@ -37,7 +37,8 @@ import spray.util._
 import spray.http._
 import MediaTypes._
 import spray.routing.directives.CachingDirectives._
-
+import spray.http.HttpHeaders.RawHeader
+import spray.routing._
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
@@ -60,6 +61,8 @@ trait DemoService extends HttpService{
   implicit def executionContext = actorRefFactory.dispatcher
 
   val demoRoute = {
+    handleRejections(myHandler) {
+      allowCrossDomain {
     get{
       path("") {
         complete(index)
@@ -106,8 +109,19 @@ trait DemoService extends HttpService{
           path("find"){
           complete("Pong !")
         }
+      } ~
+     pathPrefix("api") {
+      path("api-docs") {
+        val source = scala.io.Source.fromFile("api-docs.json")
+        val lines = source.mkString
+        source.close()
+        complete(lines)
+
       }
+    }
   }
+ }
+}
   //lazy val simpleRouteCache = routeCache(maxCapacity = 1000, timeToIdle = Duration("30 min"))
 
   lazy val index =
@@ -234,6 +248,19 @@ trait DemoService extends HttpService{
 
   def in[U](duration: FiniteDuration)(body: => U): Unit =
     actorSystem.scheduler.scheduleOnce(duration)(body)
+  def oldRh = implicitly[RejectionHandler]
+
+  def myHandler = RejectionHandler.apply {
+    case x => allowCrossDomain { oldRh(x) }
+  }
+
+  def allowCrossDomain =
+    respondWithHeaders(
+      RawHeader("Access-Control-Allow-Origin", "*"),
+      RawHeader("Access-Control-Allow-Headers", "Content-Type"),
+      RawHeader("Access-Control-Allow-Methods", "GET, PUT, POST"))
+
+
 }
 
 /*
