@@ -40,6 +40,8 @@ import spray.routing.directives.CachingDirectives._
 import spray.http.HttpHeaders.RawHeader
 import spray.routing._
 import scala.concurrent.Future
+import SprayTest.{MyJsonProtocol, Person}
+import spray.json.JsonParser
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
@@ -109,7 +111,32 @@ trait DemoService extends HttpService{
           }
         }~
           path("find"){
-          complete("Pong !")
+            formFields(
+              'name ,
+              'age,
+              'sex ,
+              'address )
+            {
+              (name, age, sex, address) =>
+                var temp = 0
+                if (age.isEmpty ){
+                  temp = -1
+                }
+                else  { temp = age.toInt }
+                var person = Person(name,temp,sex,address)
+                var result = ""
+                try{
+                  var source = scala.io.Source.fromFile("file.txt")
+                  for ( line <- source.getLines()){
+                    var currentLineResult = findMatch( line, person)
+                    result = result + currentLineResult
+                    currentLineResult =""
+                  }
+
+                  source.close()
+                }
+                complete(result)
+            }
         }~
         path("addingName"){
           complete(FormAdding)
@@ -268,7 +295,32 @@ trait DemoService extends HttpService{
       RawHeader("Access-Control-Allow-Headers", "Content-Type"),
       RawHeader("Access-Control-Allow-Methods", "GET, PUT, POST"))
 
+  def findMatch(line : String ,  personToFind : Person ) : String = {
+    import MyJsonProtocol._
+    var currentLine =  JsonParser(line).convertTo[Person]
+    var currentLineResult =  line + "\n"
 
+    //var string =""
+    if (personToFind.name == "" ){
+    }
+    else if (currentLine.name != personToFind.name)
+      currentLineResult =""
+    if (personToFind.age ==  -1 ) {
+    }
+    else if(currentLine.age != personToFind.age)
+      currentLineResult =""
+    if (personToFind.sex == ""  ){
+    }
+    else if (currentLine.sex != personToFind.sex)
+      currentLineResult = ""
+    if (personToFind.address == ""  ){
+    }
+    else if (currentLine.address != personToFind.address)
+      currentLineResult =""
+
+    currentLineResult
+
+  }
 }
 
 /*
