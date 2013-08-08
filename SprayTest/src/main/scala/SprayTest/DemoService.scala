@@ -22,7 +22,7 @@ import spray.httpx.unmarshalling.{Unmarshaller, pimpHttpEntity}
 import spray.util._
 import scalax.io._*/
 
-import java.io.File
+import java.io.{FileWriter, File}
 import org.parboiled.common.FileUtils
 import scala.concurrent.duration._
 import akka.actor.{Props, Actor}
@@ -147,7 +147,26 @@ trait DemoService extends HttpService{
             }
         } ~
         path("append"){
-          complete("pong !")
+          formFields(
+            'firstname ,
+            'age,
+            'sex ,
+            'address )
+          {
+            (firstname, age, sex, address) =>
+
+
+      //    var data = test.toString
+        //  data = data.substring(data.indexOf(',')+1 , data.length -1  )
+       ///   val Array(_ , name : String , _, age : String , _, sex : String, _, address : String)  =
+       //    data.split("=&".toCharArray)
+          val jsonToAppend = "{\"name\" : \"%s\", \"age\" : %s,  \"sex\" : \"%s\" , \"address\" : \"%s\"} ".format(firstname , age, sex, address)
+          appendFile("file.txt", jsonToAppend)
+          val source = scala.io.Source.fromFile("file.txt")
+          val lines = source.mkString
+          source.close()
+          complete(lines)
+         }
         }
       }
     }~
@@ -332,6 +351,11 @@ trait DemoService extends HttpService{
 
     currentLineResult
 
+  }
+  def appendFile(fileName: String, line: String) = {
+    val fw = new FileWriter(fileName , true) ;
+    fw.write( line + "\n") ;
+    fw.close()
   }
 }
 
