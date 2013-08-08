@@ -42,6 +42,7 @@ import spray.routing._
 import scala.concurrent.Future
 import SprayTest.{MyJsonProtocol, Person}
 import spray.json.JsonParser
+import scala.collection.parallel.mutable
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
@@ -168,14 +169,51 @@ trait DemoService extends HttpService{
           complete(lines)
          }
         }
-      }
-    }~
-     delete {
-        pathPrefix("plik"){
-          path("remove"){
-            complete("Removing")
-          }
-        }}~
+      } ~
+       path("remove"){
+           formFields('user) {
+             (user) => {
+              //println(user)
+              //println(user.toString)
+           val nameToRemove = user.toString
+         //      println(user)
+           var map = scala.collection.mutable.HashMap[String, String]()
+
+           import MyJsonProtocol._
+           var lines  =""
+           try{
+             var source = scala.io.Source.fromFile("file.txt")
+             for ( line <- source.getLines()){
+               //println(JsonParser(line).convertTo[Person])
+               if (JsonParser(line).convertTo[Person].name != nameToRemove)
+                 map(line) = line
+               //println(line)
+             }
+             source.close()
+             val pw = new java.io.PrintWriter(new File("file.txt"))
+
+             //println(map.mkString(" "))
+             var it = 0
+             for (line <- map.iterator){
+               //appendFile("file.txt", line._2)
+               if ( map.size > it ){
+                pw.write(line._2 + "\n")
+               }
+               else pw.write(line._2)
+
+               it = it + 1
+              }
+
+             pw.close()
+             source = scala.io.Source.fromFile("file.txt")
+             lines = source.mkString
+             source.close()
+           }
+           complete(lines)
+         }
+       }
+    }
+     }~
       pathPrefix("api") {
       path("api-docs") {
         val source = scala.io.Source.fromFile("api-docs.json")
@@ -262,7 +300,7 @@ trait DemoService extends HttpService{
       <html xmlns="http://www.w3.org/1999/xhtml" lang="pl" xml:lang="pl" >
         <body>
           <h1>Remove from file</h1>
-          <form name="input" action="/plik/remove" method="delete" />
+          <form name="input" action="/remove" method="post" />
           Username: <input type="text" name="user" />
           <input type="submit" value="Submit" />
         </body>
