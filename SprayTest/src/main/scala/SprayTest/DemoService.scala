@@ -77,11 +77,18 @@ trait DemoService extends HttpService{
             source.close()
             complete(lines)
           }~
-          path("findBy"){
-           // println(FormFind.text)
-           // println(FormFind.toList.mkString(" "))
+            path("addingName"){
+              respondWithMediaType(`text/html`)(complete(FormAdding))
+            }~
+            path("removeName"){
+              respondWithMediaType(`text/html`)(complete(FormRemove))
+            }~
+            path("findBy"){
            respondWithMediaType(`text/html`)(complete(FormFind))
           }~
+           path("edit"){
+             respondWithMediaType(`text/html`)(complete(FormEdit))
+           } ~
             path(""){
             complete(fileOperations)
           }
@@ -110,7 +117,8 @@ trait DemoService extends HttpService{
             "Shutting down in 1 second..."
           }
         }~
-          path("find"){
+         pathPrefix("plik"){
+            path("find"){
             formFields(
               'name ,
               'age,
@@ -137,15 +145,19 @@ trait DemoService extends HttpService{
                 }
                 complete(result)
             }
-        }~
-        path("addingName"){
-          complete(FormAdding)
-        }~
+        } ~
         path("append"){
           complete("pong !")
         }
-      } ~
-     pathPrefix("api") {
+      }
+    }~
+     delete {
+        pathPrefix("plik"){
+          path("remove"){
+            complete("Removing")
+          }
+        }}~
+      pathPrefix("api") {
       path("api-docs") {
         val source = scala.io.Source.fromFile("api-docs.json")
         val lines = source.mkString
@@ -199,7 +211,7 @@ trait DemoService extends HttpService{
         </head>
         <body>
           <h1>Add to file</h1>
-          <form name="input" action="/append" method="post">
+          <form name="input" action="/plik/append" method="post">
             <div id ="formWrapper">
               <label for="firstname">First name</label>
               <input type ="text" placeholder="First name" name="firstname"></input>
@@ -231,7 +243,7 @@ trait DemoService extends HttpService{
       <html xmlns="http://www.w3.org/1999/xhtml" lang="pl" xml:lang="pl" >
         <body>
           <h1>Remove from file</h1>
-          <form name="input" action="/remove" method="post" />
+          <form name="input" action="/plik/remove" method="delete" />
           Username: <input type="text" name="user" />
           <input type="submit" value="Submit" />
         </body>
@@ -242,7 +254,7 @@ trait DemoService extends HttpService{
       <html xmlns="http://www.w3.org/1999/xhtml" lang="pl" xml:lang="pl" >
         <body>
           <h1>Find by </h1>
-          <form name="input" action="/find" method="post" />
+          <form name="input" action="/plik/find" method="post" />
           Name: <input type="text" name="name" /> <br/>
           Age: <input type="text" name="age" /> <br/>
           Sex: <input type="text" name="sex" /> <br/>
@@ -256,7 +268,7 @@ trait DemoService extends HttpService{
       <html xmlns="http://www.w3.org/1999/xhtml" lang="pl" xml:lang="pl" >
         <body>
           <h1>Find record you want to edit </h1>
-          <form name="input" action="/edycja" method="post" />
+          <form name="input" action="/plik/edycja" method="put" />
           Name: <input type="text" name="name" /> <br/>
           Age: <input type="text" name="age" /> <br/>
           Sex: <input type="text" name="sex" /> <br/>
