@@ -22,6 +22,14 @@ import scala.concurrent.Future
 import SprayTest.{MyJsonProtocol, Person}
 import spray.json.JsonParser
 import scala.collection.parallel.mutable
+import scala.annotation.{Annotation, StaticAnnotation}
+
+case class APIInfo(
+                    description: String
+                    ) extends StaticAnnotation
+case class ParamInfo(
+                      description: String
+                      ) extends Annotation with StaticAnnotation
 
 // we don't implement our route structure directly in the service actor because
 // we want to be able to test it independently, without having to spin up an actor
@@ -55,22 +63,22 @@ trait DemoService extends HttpService{
             val source = scala.io.Source.fromFile("file.txt")
             val lines = source.mkString
             source.close()
-            complete(lines)
+            complete(lines)  : @APIInfo(description = "Showing contents of file")
           }~
             path("addingName"){
-              respondWithMediaType(`text/html`)(complete(FormAdding))
+              respondWithMediaType(`text/html`)(complete(FormAdding)) : @APIInfo(description = "Showing form for adding new entry to file")
             }~
             path("removeName"){
-              respondWithMediaType(`text/html`)(complete(FormRemove))
+              respondWithMediaType(`text/html`)(complete(FormRemove)) : @APIInfo(description = "Showing form for removing entry from file")
             }~
             path("findBy"){
-           respondWithMediaType(`text/html`)(complete(FormFind))
+           respondWithMediaType(`text/html`)(complete(FormFind)) : @APIInfo(description = "Showing form for finding entry based on specific criteria")
           }~
            path("edit"){
-             respondWithMediaType(`text/html`)(complete(FormEdit))
+             respondWithMediaType(`text/html`)(complete(FormEdit)) : @APIInfo(description = "Showing form for editing entry in file")
            }~
             path(""){
-            complete(fileOperations)
+            complete(fileOperations) : @APIInfo(description = "Showing all possible operations which can be performed on provided file")
           }
       }~
        path("stats") {
@@ -78,16 +86,16 @@ trait DemoService extends HttpService{
             actorRefFactory.actorFor("/user/IO-HTTP/listener-0")
               .ask(Http.GetStats)(1.second)
               .mapTo[Stats]
-          }
+          } : @APIInfo(description = "Showing statistics of server usage")
         } ~
         path("timeout") { ctx =>
           // we simply let the request drop to provoke a timeout
         } ~
         path("crash") { ctx =>
-          sys.error("crash boom bang")
+          sys.error("crash boom bang") : @APIInfo(description = "Crashing server on purpose")
         } ~
         path("fail") {
-          failWith(new RuntimeException("aaaahhh"))
+          failWith(new RuntimeException("aaaahhh")) : @APIInfo(description = "Server crashed")
         }
     } ~
       (post | parameter('method ! "post")) {
@@ -95,7 +103,7 @@ trait DemoService extends HttpService{
           complete {
             in(1.second){ actorSystem.shutdown() }
             "Shutting down in 1 second..."
-          }
+          }   : @APIInfo(description = "Shutting down server on demand")
         }~
          pathPrefix("plik"){
             path("find"){
@@ -123,7 +131,7 @@ trait DemoService extends HttpService{
 
                   source.close()
                 }
-                complete(result)
+                complete(result)  : @APIInfo(description = "Find entry based on specified criteria")
             }
         }~
               path("edite"){
@@ -174,7 +182,7 @@ trait DemoService extends HttpService{
                      val pw = new java.io.PrintWriter(new File("file.txt"))
                      pw.write(result)
                      pw.close()
-                     complete(result)
+                     complete(result) : @APIInfo(description = "Edit file")
                    }
                 }
               }~
@@ -197,7 +205,7 @@ trait DemoService extends HttpService{
           val source = scala.io.Source.fromFile("file.txt")
           val lines = source.mkString
           source.close()
-          complete(lines)
+          complete(lines) : @APIInfo(description = "Adding new entry to file")
          }
         }
       } ~
@@ -240,7 +248,7 @@ trait DemoService extends HttpService{
              lines = source.mkString
              source.close()
            }
-           complete(lines)
+           complete(lines) : @APIInfo(description = "Removing entry from file")
          }
        }
     }
@@ -254,7 +262,7 @@ trait DemoService extends HttpService{
         val source = scala.io.Source.fromFile("api-docs.json")
         val lines = source.mkString
         source.close()
-        complete(lines)
+        complete(lines) : @APIInfo(description = "Showing contents of json needed for SWAGGER")
 
       }
     }
