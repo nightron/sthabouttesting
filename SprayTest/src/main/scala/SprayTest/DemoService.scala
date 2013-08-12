@@ -152,7 +152,6 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
                   (name , newName, age, newAge, sex, newSex, address, newAddress) =>
 
                     println("name " + name + " sex " + sex + " address " + address)
-//                    import MyJsonProtocol._
                     var temp = 0
                     if (age.isEmpty ){
                       temp = -1
@@ -193,7 +192,6 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
 
                        }
                      }
-                     //file.patch(position , "" , OverwriteAll)
                      val source = scala.io.Source.fromFile("file.txt")
                      val lines = source.mkString
                      source.close()
@@ -210,12 +208,8 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
           {
             (firstname, age, sex, address) =>
 
-       //   import spray.json.DefaultJsonProtocol
           val person  = Person(firstname , age.toInt, sex, address)
-          //val json = person.as[Person]
           val PersonFormat = jsonFormat(Person, "name", "age", "sex", "address")
-          val jsonToAppend = "{\"name\" : \"%s\", \"age\" : %s,  \"sex\" : \"%s\" , \"address\" : \"%s\"} ".format(firstname , age, sex, address)
-          println("append format: " + PersonFormat.write(person) + " " + jsonToAppend.getClass)
           val file: Seekable =  Resource.fromFile("file.txt")
           file.append("\n" + PersonFormat.write(person))
           val source = scala.io.Source.fromFile("file.txt")
@@ -230,10 +224,8 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
              (user) => {
            val nameToRemove = user
            val file: Seekable =  Resource.fromFile(new File("file.txt"))
-//           import MyJsonProtocol._
            var position = 0
            try{
-             //var source = scala.io.Source.fromFile("file.txt")
              for ( line <- file.lines()){
                if (JsonParser(line).convertTo[Person].name.equals(nameToRemove)){
                   file.patch(position, "", OverwriteSome(line.length))
@@ -438,7 +430,6 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
   }
 
   def editPerson(line : String ,  personToEdit : Person ) : String = {
-//    import MyJsonProtocol._
     var currentLine =  JsonParser(line).convertTo[Person]
     println(personToEdit)
     var name = personToEdit.name
@@ -461,7 +452,6 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
        address = currentLine.address
     }
     PersonFormat.write(Person(name, age, sex, address)).toString()
-    //"{\"name\" : \"%s\", \"age\" : %s,  \"sex\" : \"%s\" , \"address\" : \"%s\"} ".format(name, age, sex, address)
   }
   def appendFile(fileName: String, line: String) = {
     val fw = new FileWriter(fileName , true) ;
