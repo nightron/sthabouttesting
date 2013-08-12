@@ -24,6 +24,7 @@ import spray.json.JsonParser
 import scala.collection.parallel.mutable
 import scala.annotation.{Annotation, StaticAnnotation}
 import scalax.io._
+import SprayTest.Person
 
 
 
@@ -49,7 +50,7 @@ class DemoServiceActor extends Actor with DemoService {
 }
 
 // this trait defines our service behavior independently from the service actor
-trait DemoService extends HttpService{
+trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
 
   // we use the enclosing ActorContext's or ActorSystem's dispatcher for our Futures and Scheduler
   implicit def executionContext = actorRefFactory.dispatcher
@@ -151,7 +152,7 @@ trait DemoService extends HttpService{
                   (name , newName, age, newAge, sex, newSex, address, newAddress) =>
 
                     println("name " + name + " sex " + sex + " address " + address)
-                    import MyJsonProtocol._
+//                    import MyJsonProtocol._
                     var temp = 0
                     if (age.isEmpty ){
                       temp = -1
@@ -209,9 +210,14 @@ trait DemoService extends HttpService{
           {
             (firstname, age, sex, address) =>
 
+       //   import spray.json.DefaultJsonProtocol
+          val person  = Person(firstname , age.toInt, sex, address)
+          //val json = person.as[Person]
+          val PersonFormat = jsonFormat(Person, "name", "age", "sex", "address")
           val jsonToAppend = "{\"name\" : \"%s\", \"age\" : %s,  \"sex\" : \"%s\" , \"address\" : \"%s\"} ".format(firstname , age, sex, address)
+          println("append format: " + PersonFormat.write(person) + " " + jsonToAppend.getClass)
           val file: Seekable =  Resource.fromFile("file.txt")
-          file.append("\n" + jsonToAppend)
+          file.append("\n" + PersonFormat.write(person))
           val source = scala.io.Source.fromFile("file.txt")
           val lines = source.mkString
           source.close()
@@ -224,7 +230,7 @@ trait DemoService extends HttpService{
              (user) => {
            val nameToRemove = user
            val file: Seekable =  Resource.fromFile(new File("file.txt"))
-           import MyJsonProtocol._
+//           import MyJsonProtocol._
            var position = 0
            try{
              //var source = scala.io.Source.fromFile("file.txt")
@@ -405,7 +411,7 @@ trait DemoService extends HttpService{
       RawHeader("Access-Control-Allow-Methods", "GET, PUT, POST"))
 
   def findMatch(line : String ,  personToFind : Person ) : String = {
-    import MyJsonProtocol._
+//    import MyJsonProtocol._
     var currentLine =  JsonParser(line).convertTo[Person]
     var currentLineResult =  line + "\n"
 
@@ -432,7 +438,7 @@ trait DemoService extends HttpService{
   }
 
   def editPerson(line : String ,  personToEdit : Person ) : String = {
-    import MyJsonProtocol._
+//    import MyJsonProtocol._
     var currentLine =  JsonParser(line).convertTo[Person]
     println(personToEdit)
     var name = personToEdit.name
@@ -454,7 +460,8 @@ trait DemoService extends HttpService{
     if (personToEdit.address.isEmpty  ){
        address = currentLine.address
     }
-    "{\"name\" : \"%s\", \"age\" : %s,  \"sex\" : \"%s\" , \"address\" : \"%s\"} ".format(name, age, sex, address)
+    PersonFormat.write(Person(name, age, sex, address)).toString()
+    //"{\"name\" : \"%s\", \"age\" : %s,  \"sex\" : \"%s\" , \"address\" : \"%s\"} ".format(name, age, sex, address)
   }
   def appendFile(fileName: String, line: String) = {
     val fw = new FileWriter(fileName , true) ;
