@@ -29,7 +29,6 @@ import StatusCodes._
 import Directives._
 
 
-
 case class APIInfo(
                     description: String
                     ) extends StaticAnnotation
@@ -111,29 +110,6 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
                   complete(result)  : @APIInfo(description = "Find entry based on specified criteria")
               }
             }~
-            pathPrefix("remove"){
-              formFields('user) {
-                (user) => {
-                  val nameToRemove = user
-                  val file: Seekable =  Resource.fromFile(new File("file.txt"))
-                  var position = 0
-                  try{
-                    for ( line <- file.lines()){
-                      if (JsonParser(line).convertTo[Person].name.equals(nameToRemove)){
-                        file.patch(position, "", OverwriteSome(line.length))
-                        println(line)
-                      }  else {
-                        position = position + line.length
-                      }
-                    }
-                  }
-                  val source = scala.io.Source.fromFile("file.txt")
-                  val lines = source.mkString
-                  source.close()
-                  complete(lines) : @APIInfo(description = "Removing record from a file")
-                }
-              }
-            }~
             path(""){
             complete(fileOperations) : @APIInfo(description = "Showing all possible operations which can be performed on provided file")
           }
@@ -188,13 +164,16 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
                 complete(BadRequest, "Age must be a number higher or equal 0")
               else{
                 val person  = Person(firstname , personAge, gender, address)
-                val PersonFormat = jsonFormat(Person, "name", "age", "sex", "address")
-                val file: Seekable =  Resource.fromFile("file.txt")
-                file.append("\n" + PersonFormat.write(person))
-                val source = scala.io.Source.fromFile("file.txt")
-                val lines = source.mkString
-                source.close()
-                complete(lines) : @APIInfo(description = "Adding new record at the end of a file")
+                if (findIfNameIsUnique(Person(firstname, -1, "",""))){
+                  val PersonFormat = jsonFormat(Person, "name", "age", "sex", "address")
+                  val file: Seekable =  Resource.fromFile("file.txt")
+                  file.append("\n" + PersonFormat.write(person))
+                  val source = scala.io.Source.fromFile("file.txt")
+                  val lines = source.mkString
+                  source.close()
+                  complete(lines) : @APIInfo(description = "Adding new record at the end of a file")
+                } else
+                  complete(BadRequest, "Name must be unique")
               }
             }
           }
@@ -232,7 +211,7 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
                     complete(BadRequest, "Age must be a number higher or equal 0")
                   else
                     complete(BadRequest, "Wrong sex parameter use \"male\" or \"female\"")
-                else{
+                else if ( findIfNameIsUnique(Person(newName, -1,"",""))){
                   if (temp == 0){
                     temp = age.toInt
                   }
@@ -275,12 +254,13 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
                           if (temporary == 0){
                             temporary = newAge.toInt
                           }
-                          val newLine =  editPerson(line , Person(newName, temporary, newSex, newAddress))
-                          file.patch(position , newLine , OverwriteSome(line.length))
-                          file.string
-                          if ( newLine.length > line.length)
-                            offset = offset + (newLine.length - line.length)
-                          position = position + newLine.length + 1
+
+                            val newLine =  editPerson(line , Person(newName, temporary, newSex, newAddress))
+                            file.patch(position , newLine , OverwriteSome(line.length))
+                            file.string
+                            if ( newLine.length > line.length)
+                              offset = offset + (newLine.length - line.length)
+                            position = position + newLine.length + 1
                         }
                       }
                     }
@@ -289,7 +269,35 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
                     source.close()
                     complete(lines) : @APIInfo(description = "Editing records in false based on specified cryteria")
                   }
+                }   else{
+                  complete(BadRequest, "New name must be unique")
+              }
+            }
+          }~
+          pathPrefix("remove"){
+            formFields('user) {
+              (nameToRemove) => {
+                if ( nameToRemove.isEmpty){
+                  complete(BadRequest, "Bad name")
+                } else{
+                  val file: Seekable =  Resource.fromFile(new File("file.txt"))
+                  var position = 0
+                  try{
+                    for ( line <- file.lines()){
+                      if (JsonParser(line).convertTo[Person].name.equals(nameToRemove)){
+                        file.patch(position, "", OverwriteSome(line.length))
+                        println(line)
+                      }  else {
+                        position = position + line.length
+                      }
+                    }
+                  }
+                  val source = scala.io.Source.fromFile("file.txt")
+                  val lines = source.mkString
+                  source.close()
+                  complete(lines) : @APIInfo(description = "Removing record from a file")
                 }
+              }
             }
           }
       }
@@ -382,7 +390,7 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
       <html xmlns="http://www.w3.org/1999/xhtml" lang="pl" xml:lang="pl" >
         <body>
           <h1>Remove from file</h1>
-          <form name="input" action="/plik/remove" method="delete" />
+          <form name="input" action="/plik/remove" method="post" />
           Username: <input type="text" name="user" />
           <input type="submit" value="Submit" />
         </body>
@@ -449,6 +457,17 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
       RawHeader("Access-Control-Allow-Origin", "*"),
       RawHeader("Access-Control-Allow-Headers", "Content-Type"),
       RawHeader("Access-Control-Allow-Methods", "GET, PUT, POST"))
+
+
+  def findIfNameIsUnique (personToFind: Person) : Boolean = {
+    var isUnique = true
+    val source = scala.io.Source.fromFile("file.txt")
+    for( line <- source.getLines()){
+      if ( !(findMatch(line, personToFind).isEmpty))
+        isUnique = false
+    }
+    isUnique
+  }
 
   def findMatch(line : String ,  personToFind : Person ) : String = {
 //    import MyJsonProtocol._
