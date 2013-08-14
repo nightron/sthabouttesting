@@ -63,6 +63,18 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
       path("") {
         complete(index)
       }~
+      path("mystyle.css"){
+        val source = scala.io.Source.fromFile("mystyle.css")
+        val lines = source.mkString
+        source.close
+        complete(lines)
+      }~
+        path("mystyle2.css"){
+          val source = scala.io.Source.fromFile("mystyle2.css")
+          val lines = source.mkString
+          source.close
+          complete(lines)
+        }~
       pathPrefix("plik") {
           path("open"){
             val source = scala.io.Source.fromFile("file.txt")
@@ -354,7 +366,7 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
   lazy val FormAdding =
       <html xmlns="http://www.w3.org/1999/xhtml" lang="pl" xml:lang="pl" >
         <head>
-          <link rel="stylesheet" type="text/css" href="/mystyle.css" ></link>
+          <link  type="text/css" href="\mystyle.css" rel="stylesheet" ></link>
         </head>
         <body>
           <h1>Add to file</h1>
@@ -388,44 +400,100 @@ trait DemoService extends HttpService with SprayTest.MyJsonProtocol {
 
   lazy val FormRemove =
       <html xmlns="http://www.w3.org/1999/xhtml" lang="pl" xml:lang="pl" >
+        <head>
+            <link type="text/css" href="\mystyle.css" rel="stylesheet"></link>
+        </head>
         <body>
           <h1>Remove from file</h1>
-          <form name="input" action="/plik/remove" method="post" />
-          Username: <input type="text" name="user" />
-          <input type="submit" value="Submit" />
+            <form name="input" action="/plik/remove" method="post" >
+              <div id ="formWrapper">
+
+                <label for="user"> Username: </label>
+                <input type="text" placeholder ="Username" name="user" />
+                <br/>
+
+                <input type="submit" value="Remove" />
+              </div>
+            </form>
         </body>
       </html>
 
 
   lazy val FormFind =
       <html xmlns="http://www.w3.org/1999/xhtml" lang="pl" xml:lang="pl" >
+        <head>
+          <link type="text/css" href="\mystyle.css" rel="stylesheet" ></link>
+        </head>
         <body>
           <h1>Find by </h1>
-          <form name="input" action="/plik/find" method="get" />
-          Name: <input type="text" name="name" /> <br/>
-          Age: <input type="text" name="age" /> <br/>
-          Sex: <input type="text" name="sex" /> <br/>
-          Address: <input type="text" name="address" /> <br/>
-          <input type="submit" value="Find" />
-          <br/>
+          <form name="input" action="/plik/find" method="get">
+            <div id ="formWrapper">
+
+              <label for="name">Name:</label>
+              <input type="text" placeholder="Name" name="name" />
+              <br/>
+
+              <label for="age">Age:</label>
+              <input type="text" placeholder="age" name="age" />
+              <br/>
+
+              <label for="sex">Sex:</label>
+              <input type="text" placeholder="sex" name="sex" />
+              <br/>
+
+              <label for="address">Address:</label>
+              <input type="text" placeholder="address" name="address" />
+              <br/>
+
+              <input type="submit" value="Find" />
+              <br/>
+            </div>
+          </form>
         </body>
       </html>
 
   lazy val FormEdit =
       <html xmlns="http://www.w3.org/1999/xhtml" lang="pl" xml:lang="pl" >
+        <head>
+          <link type ="text/css" href="\mystyle2.css" rel="stylesheet"></link>
+        </head>
         <body>
           <h1>Find record you want to edit </h1>
-          <form name="input" action="/plik/edite" method="post" />
-          Name: <input type="text" name="name" />
-          New Name: <input type="text" name="newName" /> <br/>
-          Age: <input type="text" name="age" />
-          New Age: <input type="text" name="newAge" /><br/>
-          Sex: <input type="text" name="sex" />
-          New Sex: <input type="text" name="newSex" /><br/>
-          Address: <input type="text" name="address" />
-          New Address: <input type="text" name="newAddress" /><br/>
-          <input type="submit" value="Find" />
-          <br/>
+          <form name="input" action="/plik/edite" method="post">
+            <div id="formWrapper">
+
+              <label for="name">Name:</label>
+              <input type="text" placeholder="name" name="name" />
+
+              <label for="newName" > New Name:</label>
+              <input type="text" placeholder="new Name" name="newName" />
+              <br/>
+
+              <label for="age" > Age:</label>
+              <input type="text" placeholder="age" name="age" />
+
+              <label for="newAge"  > New Age  :</label>
+              <input type="text" placeholder="new age" name="newAge" />
+              <br/>
+
+              <label for="sex">Sex:</label>
+              <input type="text" placeholder="sex" name="sex" />
+
+              <label for="newSex">New sex:</label>
+              <input type="text" placeholder="new sex" name="newSex" />
+              <br/>
+
+              <label for="address">Address:</label>
+              <input type="text" placeholder="address" name="address" />
+
+              <label for="newAddress">New Address:</label>
+              <input type="text" placeholder="new Address" name="newAddress" />
+              <br/>
+
+              <input type="submit" value="Edit" />
+              <br/>
+             </div>
+          </form>
         </body>
       </html>
 
